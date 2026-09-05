@@ -1,0 +1,18 @@
+{
+  "name": "whuscalendar-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Backend for WHUS Booking Calendar - proxies Google Calendar API reads",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "googleapis": "^178.0.0"
+  }
+}

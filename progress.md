@@ -65,6 +65,27 @@ with 'new'` runtime error. Pinned `@fullcalendar/react` to `^6.1.21` to
   two schedule pages, each with placeholder event data.
 - Rewrote `App.js` to set up `BrowserRouter`/`Routes`/`Route`/`Link` nav
   between the two schedule pages, with `/` redirecting to `/radio-shows`.
+- Scaffolded a **Node/Express backend** (`server/`) to proxy Google
+  Calendar API calls so credentials never live in the React app (`src/`
+  is client-side bundled and would expose them):
+  - `server/index.js` — Express app, CORS, `/api/health`, mounts
+    `/api/events`.
+  - `server/routes/events.js` — `GET /api/events?calendarId=...&start=...&end=...`.
+    Request handling/validation is wired up; the actual
+    `calendar.events.list` call is left as a `TODO` to implement.
+  - `server/googleCalendarClient.js` — stub for the service-account auth
+    client; intentionally left unimplemented (being built manually).
+  - `server/.env.example` — template for `PORT`, `GOOGLE_APPLICATION_CREDENTIALS`,
+    `GOOGLE_CALENDAR_ID`.
+  - `server/.gitignore` — blocks `.env` and any credential JSON files from
+    being committed (only `package.json`/`package-lock.json` allowed
+    through).
+  - Added `"proxy": "http://localhost:5000"` to `whuscalendar/package.json`
+    so the CRA dev server forwards `/api/*` calls to the backend without
+    CORS setup.
+  - **Decisions made:** GET (read)-only for now — no write/invite creation
+    yet. No caching layer yet (deliberately deferred). No separate events
+    database — Google Calendar remains the single source of truth.
 
 ## Goals / Next Steps
 
@@ -73,14 +94,21 @@ with 'new'` runtime error. Pinned `@fullcalendar/react` to `^6.1.21` to
 1. **Google Calendar API integration (read)** — pull real events from
    Google Calendar into each schedule's `Calendar` component instead of
    hardcoded placeholder arrays.
-   - [ ] Set up a Google Cloud project + OAuth/service account credentials
-         for Calendar API access.
+   - [x] Scaffolded backend (`server/`) with a `GET /api/events` route
+         ready to receive the Google API call.
+   - [ ] Set up a Google Cloud project + service account credentials for
+         Calendar API access (in progress — doing this step manually).
+   - [ ] Share the target Google Calendar with the service account email,
+         granting read access.
+   - [ ] Implement `server/googleCalendarClient.js` (auth) and the
+         `calendar.events.list` call in `server/routes/events.js`.
    - [ ] Decide on one Google Calendar per schedule (e.g. a "Radio Shows"
          calendar, a "Studio B" calendar) vs. one shared calendar filtered
          by tag/category.
-   - [ ] Fetch events (`events.list`) and map them into FullCalendar's
-         `events` prop format.
+   - [ ] Wire `src/pages/RadioShows.jsx` / `StudioB.jsx` to fetch from
+         `/api/events` instead of using hardcoded arrays.
    - [ ] Handle refresh/polling so the displayed schedule stays in sync.
+   - [ ] Add caching (currently deferred) once basic reads are working.
 
 2. **Booking flow (select a 3-hour block)** — let a user pick a 3-hour
    slot on the calendar.

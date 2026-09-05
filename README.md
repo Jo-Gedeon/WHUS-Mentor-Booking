@@ -28,6 +28,22 @@ npm start
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
 The page reloads automatically as you edit files in `src/`.
 
+### Backend (Google Calendar proxy)
+
+Calendar events are read through a small backend in `server/` so Google
+credentials never ship to the browser. To run it locally:
+
+```bash
+cd server
+npm install
+cp .env.example .env   # fill in your real values
+npm run dev
+```
+
+It listens on `http://localhost:5000`. The React app is configured
+(`"proxy"` in `package.json`) to forward `/api/*` requests to it during
+`npm start`, so no CORS setup is needed in development.
+
 ## Project Structure
 
 ```
