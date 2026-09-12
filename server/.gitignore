@@ -1,7 +1,6 @@
 node_modules/
 .env
 .env.*
-!.env.example
 
 # Service account keys / other Google credential JSON files —
 # only package.json and package-lock.json are allowed through.

@@ -1,17 +1,21 @@
-import React from "react";
+import React, {useState,useEffect} from "react";
 import Calendar from "../components/Calendar";
 
-// TODO: replace with real radio show bookings (e.g. fetched from your API/DB)
-const radioShowEvents = [
-    { title: "Morning Show", start: "2026-09-07T08:00:00", end: "2026-09-07T10:00:00" },
-    { title: "Afternoon Mix", start: "2026-09-07T14:00:00", end: "2026-09-07T16:00:00" },
-];
 
 function RadioShows() {
+    const [events, setEvents] = useState([]);
+
+    useEffect(()=> {
+        fetch("/api/events")
+        .then((res) => res.json())
+        .then((data) => setEvents(data))
+        .catch((err) => console.error("failed to load events:",err))
+    }, [])
+
     return (
         <div>
             <h2>Radio Show Schedule</h2>
-            <Calendar events={radioShowEvents} initialView="timeGridWeek" />
+            <Calendar events={events} initialView="timeGridWeek" />
         </div>
     );
 }

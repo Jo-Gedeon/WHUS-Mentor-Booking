@@ -25,8 +25,11 @@ reusable calendar component.
   - `/` → redirects to `/radio-shows`
 - Each schedule page (`src/pages/RadioShows.jsx`, `src/pages/StudioB.jsx`)
   owns its own event data and passes it into the shared `Calendar`.
-- Events are currently **hardcoded placeholder arrays** in each page file
-  (not yet connected to a real data source/API/DB).
+- `src/pages/RadioShows.jsx` now fetches **real events from Google
+  Calendar** via the backend (`GET /api/events`) using `useEffect`/
+  `useState`, instead of a hardcoded array. `src/pages/StudioB.jsx` is
+  still on a **hardcoded placeholder array** — same pattern needs to be
+  copied over once its calendar ID is decided.
 
 ## Architecture Notes
 
@@ -87,6 +90,41 @@ with 'new'` runtime error. Pinned `@fullcalendar/react` to `^6.1.21` to
     yet. No caching layer yet (deliberately deferred). No separate events
     database — Google Calendar remains the single source of truth.
 
+### 2026-09-12
+
+- **Google Calendar read integration is now working end-to-end** for
+  Radio Shows: `server/index.js` (Express app, CORS, `/api/health`,
+  mounts `/api/events`) → `server/routes/events.js` (`GET /api/events`
+  calls `calendar.events.list` and maps results to
+  `{ id, title, start, end, organizer }`) → `server/googleCalendarClient.js`
+  (authenticated `googleapis` v3 client via a service-account key) →
+  `src/pages/RadioShows.jsx` (`fetch("/api/events")` in `useEffect`,
+  stored via `useState`, passed into `<Calendar />`).
+- Restored the accidentally-deleted `public/` folder (had been removed
+  in an earlier commit) and trimmed it down: kept `index.html` (with the
+  `<div id="root">` React mounts into), `manifest.json`, and
+  `robots.txt`; removed the CRA default icons (`favicon.ico`,
+  `logo192.png`, `logo512.png`) and their references in `index.html`/
+  `manifest.json` since they weren't being used.
+- Fixed several small bugs blocking the integration from actually
+  running:
+  - `server/.env`'s `GOOGLE_APPLICATION_CREDENTIALS` pointed at
+    `/apiKey.json` (filesystem root) instead of `./apiKey.json`
+    (relative to `server/`), causing `ENOENT`.
+  - `server/apiKey.json` initially contained an **OAuth 2.0 Client ID**
+    credential (`{"web": {...}}`) instead of a **service account key**
+    — swapped in a real service-account JSON key (with `private_key`/
+    `client_email`) downloaded from Google Cloud Console, and shared
+    the calendar with that service account's `client_email`.
+  - `src/pages/RadioShows.jsx` had `res.json` (missing `()`) in the
+    fetch chain, causing a `TypeError: Illegal invocation`.
+  - A stray broken `import ... from ".env"` line in
+    `server/googleCalendarClient.js`.
+- **Decision made:** using a specific non-primary Google Calendar (found
+  via Calendar Settings → "Integrate calendar" → Calendar ID) for Radio
+  Shows rather than the primary account calendar, set via
+  `GOOGLE_CALENDAR_ID` in `server/.env`.
+
 ## Goals / Next Steps
 
 ### Primary Goals
@@ -96,17 +134,20 @@ with 'new'` runtime error. Pinned `@fullcalendar/react` to `^6.1.21` to
    hardcoded placeholder arrays.
    - [x] Scaffolded backend (`server/`) with a `GET /api/events` route
          ready to receive the Google API call.
-   - [ ] Set up a Google Cloud project + service account credentials for
-         Calendar API access (in progress — doing this step manually).
-   - [ ] Share the target Google Calendar with the service account email,
+   - [x] Set up a Google Cloud project + service account credentials for
+         Calendar API access.
+   - [x] Share the target Google Calendar with the service account email,
          granting read access.
-   - [ ] Implement `server/googleCalendarClient.js` (auth) and the
+   - [x] Implement `server/googleCalendarClient.js` (auth) and the
          `calendar.events.list` call in `server/routes/events.js`.
-   - [ ] Decide on one Google Calendar per schedule (e.g. a "Radio Shows"
-         calendar, a "Studio B" calendar) vs. one shared calendar filtered
-         by tag/category.
-   - [ ] Wire `src/pages/RadioShows.jsx` / `StudioB.jsx` to fetch from
-         `/api/events` instead of using hardcoded arrays.
+   - [x] Decide on a calendar for Radio Shows — using a specific
+         non-primary Google Calendar (its own Calendar ID) rather than
+         the primary account calendar.
+   - [ ] Decide on Studio B's calendar (own calendar vs. shared/filtered).
+   - [x] Wire `src/pages/RadioShows.jsx` to fetch from `/api/events`
+         instead of using a hardcoded array.
+   - [ ] Wire `src/pages/StudioB.jsx` the same way once its calendar ID
+         is decided.
    - [ ] Handle refresh/polling so the displayed schedule stays in sync.
    - [ ] Add caching (currently deferred) once basic reads are working.
 
